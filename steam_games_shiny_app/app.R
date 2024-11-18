@@ -56,7 +56,7 @@ page1_ui <- fluidPage(
 page2_ui <- fluidPage(
   
   # title of the second page
-  titlePanel("Steam Games - Graph (Recently only contains three independent distribution graphs of nemetical variable)"),
+  titlePanel("Steam Games - Graph (Currently only three independent distribution graphs of the numerical variable)"),
   sidebarLayout(
     sidebarPanel(
       helpText("Use the buttons below to switch between graphs."),
@@ -75,7 +75,7 @@ page2_ui <- fluidPage(
       # set a button for distribution of original price
       actionButton("hist_original_price", "Original Price"),
       
-      # set a button for distribution of achievementse
+      # set a button for distribution of achievements
       actionButton("hist_achievements", "Achievements"),
       
       #set the switch page button (back to the table page)
