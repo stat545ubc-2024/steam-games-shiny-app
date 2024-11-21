@@ -94,5 +94,5 @@ library(shiny)
 runApp()
 ```
 
-For future information, please see [Sharing apps to run locally](https://shiny.posit.co/r/articles/share/deployment-local/)
+For further information, please see [Sharing apps to run locally](https://shiny.posit.co/r/articles/share/deployment-local/)
   
