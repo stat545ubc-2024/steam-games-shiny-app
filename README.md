@@ -24,7 +24,7 @@ pages:
 * **Interactive Filtering**: 
  - Users can select one or more variables to see detailed information about each Steam game. 
  
- - Among these selected variables, the user can further enter text or values to do a precise Search.
+ - Among these selected variables, the user can further enter text or values to do a precise search.
  
  - If users want to search certain name or id of team games, they can use the search bar on the top right.
 
@@ -40,7 +40,7 @@ If there are no selected variables, the download file would be the original stea
 Users can click reset button to reset all filters to their default state.
 
 * **Navigation**: 
-Users can click *Go to Graph page* to switch to graph view. 
+Users can click *Go to Graph Page* to switch to graph view. 
 
 ### 2. **Data Graph View**:
 
@@ -56,7 +56,7 @@ By doing so, users can explore the relationship between discount prices and orig
 and explore the relationship between discount prices and achievements. 
 
 * **Navigation**: 
-Users can click *Go to Table page* to switch to data table view. 
+Users can click *Go to Table Page* to switch to data table view. 
 
 
 ## Dataset Source

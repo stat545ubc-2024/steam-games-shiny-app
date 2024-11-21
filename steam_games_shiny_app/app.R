@@ -4,6 +4,8 @@ library(tidyverse)
 library(DT)
 library(dplyr)
 library(ggplot2)
+
+# Install the package which contains the dataset.
 devtools::install_github("UBC-MDS/datateachr")
 
 
@@ -12,11 +14,11 @@ page1_ui <- fluidPage(
   #center the column headers
   align = "center",
   #add title of page 1
-  titlePanel("Steam Games - Table"),
+  titlePanel("Steam Games"),
   
   sidebarLayout(
     sidebarPanel(
-      helpText("You can select one or more variables below to see the detail information."),
+      helpText("You can select one or more words below to see the detail information."),
       
       #select base dataset
       selectInput(
@@ -37,7 +39,7 @@ page1_ui <- fluidPage(
       downloadButton("download_table", "Download Table"),
       
       #set the switch page button (go to the graph page)
-      actionButton("go_to_page2", "Go to Graph page")
+      actionButton("go_to_page2", "Go to Graph Page")
     ),
     
     mainPanel(
@@ -56,7 +58,7 @@ page1_ui <- fluidPage(
 page2_ui <- fluidPage(
   
   # title of the second page
-  titlePanel("Steam Games - Graph (Currently only three independent distribution graphs of the numerical variable)"),
+  titlePanel("Steam Games - Distribution Graph"),
   sidebarLayout(
     sidebarPanel(
       helpText("Use the buttons below to switch between graphs."),
@@ -79,7 +81,7 @@ page2_ui <- fluidPage(
       actionButton("hist_achievements", "Achievements"),
       
       #set the switch page button (back to the table page)
-      actionButton("go_to_page1", "Go to Table page") 
+      actionButton("go_to_page1", "Go to Table Page") 
     ),
     mainPanel(
       #dynamic heading for the graph
@@ -183,6 +185,10 @@ server <- function(input, output, session) {
     data
   })
   
+  # Feature 1: Dynamic Variable Selection and Filtering
+  # This feature allows users to select variables and apply filters dynamically,
+  # enabling customized exploration of the Steam games dataset.
+  
   output$data_table <- DT::renderDataTable({
     DT::datatable(
       filtered_data() %>%
@@ -215,6 +221,10 @@ server <- function(input, output, session) {
       write.csv(filtered_data(), file, row.names = FALSE)
     }
   )
+  
+  #Feature 2: Download button.
+  #This feature allows users to download the result dataset as a CSV file for offline analysis.
+  #If there are no selected variables, the download file would be the original steam games dataset.
   
   #Page 2
   
@@ -266,6 +276,10 @@ server <- function(input, output, session) {
     }
   })  
   
+  # Feature 3: Interactive Histograms with Adjustable Range.
+  # This feature provides interactive histograms for numerical variables,
+  # allowing users to adjust the discount price range and explore data distributions.
+  
   
   # Logical of swich page
   observeEvent(input$go_to_page2, {
@@ -277,7 +291,9 @@ server <- function(input, output, session) {
   })
 }
 
-
+# Feature 4: Page Navigation Between Table and Graph Views.
+# This feature enables users to switch between the data table and graph pages,
+# enhancing the user experience by providing easy navigation within the app.
 
 
 
