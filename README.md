@@ -22,11 +22,11 @@ pages:
 ### 1. **Data Table View**:
 
 * **Interactive Filtering**: 
- - Users can select one or more variables to see detailed information about each Steam game. 
+1. Users can select one or more variables to see detailed information about each Steam game. 
  
- - Among these selected variables, the user can further enter text or values to do a precise search.
+2. Among these selected variables, the user can further enter text or values to do a precise search.
  
- - If users want to search certain name or id of team games, they can use the search bar on the top right.
+3. If users want to search certain name or id of team games, they can use the search bar on the top right.
 
 * **Sorting**: 
 Each variable has two sorting arrows. If a variable is numerical, it will be sorted by number;
@@ -66,7 +66,7 @@ which provides curated datasets for educational purposes.
 
 **Package**: [datateachr](https://github.com/UBC-MDS/datateachr.git)
 
-**Dataset**: *steam_games*; This dataset contains detail information of games from steam shop.
+**Dataset**: *steam_games*; This dataset contains detail information of games from steam shop. It currently has 40833 rows and 21 columns.
 
 ## How to Run This App Locally
 
