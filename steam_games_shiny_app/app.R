@@ -1,16 +1,14 @@
 library(shiny)
-library(shinyWidgets)
 library(datateachr)
 library(tidyverse)
 library(DT)
-library(dplyr)
-library(ggplot2)
 library(shinythemes)
 library(httr)
 library(jsonlite)
 
-# Install the package which contains the dataset.
-devtools::install_github("UBC-MDS/datateachr")
+# Load the dataset.
+saveRDS(steam_games, file = "steam_games.rds")
+steam_games <- readRDS("steam_games.rds")
 
 # ---- Variable Descriptions ----
 variable_descriptions <- list(
@@ -88,7 +86,7 @@ page1_ui <- fluidPage(
                   label = "Select currency unit",
                   choices = currencies_choices,
                   selected = "USD",
-                    ),
+      ),
       
       actionButton("reset", "Reset"), #set the reset button
       
@@ -137,7 +135,7 @@ page2_ui <- fluidPage(
       downloadButton("download_plot", "Down load the current plot"),
     ),
     
-      
+    
     
     mainPanel(
       #dynamic heading for the graph
@@ -188,11 +186,11 @@ page3_ui <- fluidPage(
 
 # ----main ui; switch between page1 and page2 ----
 ui <- navbarPage(
-    "Steam Games Explorer",
-    tabPanel("Data Table", page1_ui),
-    tabPanel("Data Graph", page2_ui),
-    tabPanel("Help", page3_ui)
-  )
+  "Steam Games Explorer",
+  tabPanel("Data Table", page1_ui),
+  tabPanel("Data Graph", page2_ui),
+  tabPanel("Help", page3_ui)
+)
 # ---- End ----
 
 
@@ -229,8 +227,8 @@ server <- function(input, output, session) {
         sliderInput(
           inputId = paste0("chosen_", element),
           label = paste("Select range for", variable_descriptions[[element]], "(", currency_symbol, "):"),
-          min = round(min(steam_games[[element]] * 1/rate, na.rm = TRUE), 2),
-          max = round(max(steam_games[[element]] * 1/rate, na.rm = TRUE), 2),
+          min = round(min(steam_games[[element]] * rate, na.rm = TRUE), 2),
+          max = round(max(steam_games[[element]] * rate, na.rm = TRUE), 2),
           value = range(round(steam_games[[element]] * rate, 2), na.rm = TRUE)
         )
       } else if (is.numeric(steam_games[[element]])) {
@@ -303,7 +301,7 @@ server <- function(input, output, session) {
       
       api_url <- paste0("https://v6.exchangerate-api.com/v6/", api_key, "/latest/", base_currency) # API required URL
       
-  
+      
       res <- GET(api_url)
       if (status_code(res) == 200) { #see if JSON works
         
@@ -333,11 +331,11 @@ server <- function(input, output, session) {
   
   
   
-  output$data_table <- DT::renderDataTable({
+  # Reactive expression for processed data
+  processed_data <- reactive({
     req(filtered_data())
     data <- filtered_data() %>%
-      
-      select(c(id, name, url), all_of(input$selected_variables)) #show id, name, url and selected variables
+      select(c(id, name, url), all_of(input$selected_variables)) # Include id, name, url, and selected variables
     
     # If currency conversion is selected, convert the price
     if ("discount_price" %in% input$selected_variables || "original_price" %in% input$selected_variables) {
@@ -346,54 +344,77 @@ server <- function(input, output, session) {
       
       if ("discount_price" %in% input$selected_variables) {
         data <- data %>%
-          mutate(discount_price = paste0(round(discount_price * rate, 2)))
+          mutate(discount_price = round(discount_price * rate, 2))
       }
       
       if ("original_price" %in% input$selected_variables) {
         data <- data %>%
-          mutate(original_price = paste0(round(original_price * rate, 2)))
+          mutate(original_price = round(original_price * rate, 2))
       }
     }
-    # New Feature number 2: be able to use Real-time exchange rate.
-    # Allow the user to change the currency with a real-time exchange rate.
-    # Since the exchange rate is calculated in real-time, users do not need to search for the exchange rate and calculate it online.
+    
+    data
+  })
+  # New Feature number 2: be able to use Real-time exchange rate.
+  # Allow the user to change the currency with a real-time exchange rate.
+  # Since the exchange rate is calculated in real-time, users do not need to search for the exchange rate and calculate it online.
+  
+  # Render the data table
+  output$data_table <- DT::renderDataTable({
+    data <- processed_data()
     
     # Renders the game title as a clickable link by using the url in the table
     data <- data %>%
       mutate(name = ifelse(!is.na(url) & url != "",
                            paste0('<a href="', url, '" target="_blank">', name, '</a>'),
                            name)) %>%
-      select(-url) # delete the url column 
+      select(-url) # Delete the url column
     
     # New Feature number 3: Connect the url with each game
     # Allow users to directly enter the game's corresponding steam page by clicking on the game name.
     # Provides convenience for users. After seeing the game they like in the table, they can directly enter the game homepage without having to copy and paste the URL.
     
-    DT::datatable(
-      data,
-      escape = FALSE, # Rendering Hyperlinks
-      options = list(
-        pageLength = 10, #show up 10 lines in a page
-        autoWidth = TRUE, #automatically control the width of column
-        scrollX = TRUE #allow horizontal scrolling
-      ),
-      rownames = FALSE #remove row name
-    )
-  })
+    # Name the numeric column with currency symbols (Optional)
+    currency_columns <- intersect(c("original_price", "discount_price"), colnames(data))
+    if (length(currency_columns) > 0) {
+      datatable <- DT::datatable(
+        data,
+        escape = FALSE, # Rendering Hyperlinks
+        options = list(
+          pageLength = 10, # Show up to 10 lines per page
+          autoWidth = TRUE, # Automatically control the width of columns
+          scrollX = TRUE # Allow horizontal scrolling
+        ),
+        rownames = FALSE # Remove row names
+      ) %>%
+        formatCurrency(columns = currency_columns, currency = currency_symbols[[input$currency]])
+    } else {
+      datatable <- DT::datatable(
+        data,
+        escape = FALSE,
+        options = list(
+          pageLength = 10,
+          autoWidth = TRUE,
+          scrollX = TRUE
+        ),
+        rownames = FALSE
+      )
+    }
     
+    datatable
+  })
   
-  # ---- End ----
-  
-  
-  #Setup the download information
+  # Setup the download information
   output$download_table <- downloadHandler(
     filename = function() {
       paste("steam_games_table", Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
-      write.csv(filtered_data(), file, row.names = FALSE)
+      data_to_download <- processed_data()
+      write.csv(data_to_download, file, row.names = FALSE)
     }
   )
+  
   
   #Feature 2: Download button.
   #This feature allows users to download the result dataset as a CSV file for offline analysis.
