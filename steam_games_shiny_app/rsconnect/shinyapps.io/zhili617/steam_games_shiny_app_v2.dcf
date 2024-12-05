@@ -5,7 +5,7 @@ account: zhili617
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 13529403
-bundleId: 9467099
+bundleId: 9467705
 url: https://zhili617.shinyapps.io/steam_games_shiny_app_v2/
 version: 1
 asMultiple: FALSE
