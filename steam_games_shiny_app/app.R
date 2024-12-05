@@ -42,7 +42,8 @@ currencies_choices <- c(
   "Euro (EUR) €" = "EUR",
   "Great Britain Pound (GBP) £" = "GBP",
   "Japanese Yen (JPY) ¥" = "JPY",
-  "China Yuan (CNY) ¥" = "CNY"
+  "Chinese Yuan (CNY) ¥" = "CNY",
+  "Canadian Dollar (CAD) $" = "CAD"
 )
 
 currency_symbols <- c(
@@ -50,7 +51,8 @@ currency_symbols <- c(
   "EUR" = "€",
   "GBP" = "£",
   "JPY" = "¥",
-  "CNY" = "¥"
+  "CNY" = "¥",
+  "CAD" = "$"
 )
 # ---- End ----
 
@@ -65,6 +67,7 @@ page1_ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
+      titlePanel("Filter"),
       helpText("You can select one or more words below to see the detail information."),
       
       #select base data set
@@ -95,7 +98,7 @@ page1_ui <- fluidPage(
     ),
     
     mainPanel(
-      h3("Steam Games Table"), #header of table
+      h3("Searching Result"), #header of table
       
       DT::dataTableOutput("data_table")  #name of display data table
     )
@@ -173,7 +176,7 @@ page3_ui <- fluidPage(
     ),
     
     h4("How to Use"),
-    p("Use the tabs at the top to navigate between the Data Table and Data Graph pages. On each page, use the controls in the sidebar to interact with the data. The 'Reset' button clears your selections, and the 'Download' buttons allow you to save the current data or plot.")
+    p("Use the tabs at the top to navigate between the Data Table and Data Graph pages. On each page, use the controls in the sidebar to interact with the data. The 'Reset' button clears your selections, and the 'Download' buttons allow you to save the current data or plot. If you want to see the price with different currency units, please at least select one of the discount prices and the original price.")
   )
 )
 
@@ -224,20 +227,28 @@ server <- function(input, output, session) {
     
     lapply(input$selected_variables, function(element) {
       if (element %in% c("discount_price", "original_price")) {
+        min_val <- round(min(steam_games[[element]] * rate, na.rm = TRUE), 2)
+        max_val <- round(max(steam_games[[element]] * rate, na.rm = TRUE), 2)
+        step_val <- round((max_val - min_val)/10, 2)
         sliderInput(
           inputId = paste0("chosen_", element),
           label = paste("Select range for", variable_descriptions[[element]], "(", currency_symbol, "):"),
-          min = round(min(steam_games[[element]] * rate, na.rm = TRUE), 2),
-          max = round(max(steam_games[[element]] * rate, na.rm = TRUE), 2),
-          value = range(round(steam_games[[element]] * rate, 2), na.rm = TRUE)
+          min = min_val,
+          max = max_val,
+          value = range(round(steam_games[[element]] * rate, 2), na.rm = TRUE),
+          step = step_val
         )
       } else if (is.numeric(steam_games[[element]])) {
+        min_val <- min(steam_games[[element]], na.rm = TRUE)
+        max_val <- max(steam_games[[element]], na.rm = TRUE)
+        step_val <- (max_val - min_val)/10
         sliderInput(
           inputId = paste0("chosen_", element),
           label = paste("Select range for", variable_descriptions[[element]], ":"),
-          min = min(steam_games[[element]], na.rm = TRUE),
-          max = max(steam_games[[element]], na.rm = TRUE),
-          value = range(steam_games[[element]], na.rm = TRUE)
+          min = min_val,
+          max = max_val,
+          value = range(steam_games[[element]], na.rm = TRUE),
+          step = step_val
         )
       } else {
         textInput(
@@ -260,15 +271,9 @@ server <- function(input, output, session) {
         #create dynamically ID based on input in first search bar
         chosen_element <- paste0("chosen_", element)
         
-        # if the input of the first search bar is numeric then show the silder and given output based on the range in the silder
-        if (is.numeric(steam_games[[element]])) {
-          range <- input[[chosen_element]]
-          if (!is.null(range)) {
-            data <- data %>% filter(.data[[element]] >= range[1], .data[[element]] <= range[2])
-          }
-        } else {
-          
-          # If the input of the first search bar is not numeric, show a new search bar, and according to the input of the second search bar, filter output
+        # Remove numeric filtering here so that only text filtering is done
+        # Numeric filtering will be done after currency conversion in processed_data()
+        if (!is.numeric(steam_games[[element]])) {
           input_text <- input[[chosen_element]]
           if (!is.null(input_text) && input_text != "") {
             data <- data %>% filter(grepl(input_text, .data[[element]], ignore.case = TRUE))
@@ -353,6 +358,19 @@ server <- function(input, output, session) {
       }
     }
     
+    # Perform numeric filtering after currency conversion
+    if (!is.null(input$selected_variables)) {
+      for (element in input$selected_variables) {
+        if (is.numeric(data[[element]])) {
+          chosen_element <- paste0("chosen_", element)
+          range_val <- input[[chosen_element]]
+          if (!is.null(range_val) && length(range_val) == 2) {
+            data <- data %>% filter(.data[[element]] >= range_val[1], .data[[element]] <= range_val[2])
+          }
+        }
+      }
+    }
+    
     data
   })
   # New Feature number 2: be able to use Real-time exchange rate.
@@ -415,13 +433,16 @@ server <- function(input, output, session) {
     }
   )
   
+
+
   
   #Feature 2: Download button.
   #This feature allows users to download the result dataset as a CSV file for offline analysis.
   #If there are no selected variables, the download file would be the original steam games dataset.
   
   # ---- End ----
-  #Page 2
+  
+  #----Page 2----
   
   
   current_graph <- reactiveVal("discount_price") #Defines the reactive value of the current chart type
@@ -502,20 +523,18 @@ server <- function(input, output, session) {
       dev.off()
     }
   )
-  
+}
+
   
   # New feature number 4: be able to download the current graph.
   # Allow the user to download the current graph with the selected range.
   # Helps users study selected data offline.
   
-  # Logical of switch page
-  observeEvent(input$go_to_page1, {
-    updateNavbarPage(session, "Steam Games Explorer", selected = "Data Table")
-  })
-}
+# ---- End ----
+  
 
-# Feature 4: Page Navigation Between Table and Graph Views.
-# This feature enables users to switch between the data table and graph pages,
+# Feature 4: Page Navigation with Table, Graph Views, and help pages.
+# This feature enables users to switch from the data table, graph pages, and help pages,
 # enhancing the user experience by providing easy navigation within the app.
 
 
